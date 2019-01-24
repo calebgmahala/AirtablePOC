@@ -1,0 +1,32 @@
+service: AirtablePOC
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: dev
+  profile: default
+  environment:
+    TEST: "TEST"
+    PGUSER: ${file(./env.js):env.DATABASE_USERNAME}
+    PGPASSWORD: ${file(./env.js):env.DATABASE_PASSWORD}
+    PGHOST: ${file(./env.js):env.DATABASE_HOST}
+    PGPORT: ${file(./env.js):env.DATABASE_PORT}
+    PGDATABASE: ${file(./env.js):env.DATABASE_NAME}
+    ATBASE: ${file(./env.js):env.AIRTABLE_BASE}
+    ATSECRET: ${file(./env.js):env.AIRTABLE_SECRET}
+functions:
+  updateAirtable:
+    handler: src/UpdateAirtable/handler.updateAirtable
+    events:
+      - schedule: rate(5 minutes)
+  getArtists:
+    handler: src/Artists/handler.getArtists
+    events:
+      - http:
+          path: artists
+          method: get
+  deleteArtist:
+    handler: src/Artists/handler.deleteArtist
+    events:
+      - http:
+          path: artists/(id)
+          method: delete
