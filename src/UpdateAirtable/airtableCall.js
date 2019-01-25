@@ -1,5 +1,10 @@
-// const axios = require("axios");
-const axiosInstance = require("../../axios");
+require("dotenv").config({ path: "../../.env" });
+const axios = require("axios");
+
+Airtable = axios.create({
+  baseURL: "https://api.airtable.com/v0/" + process.env.AIRTABLE_BASE + "/",
+  headers: { Authorization: "Bearer " + process.env.AIRTABLE_SECRET }
+});
 
 class AirtableCall {
   static getAirtableIdByCustomField(
@@ -23,8 +28,7 @@ class AirtableCall {
       };
     }
 
-    return axiosInstance.airtable
-      .get(table, params)
+    return Airtable.get(table, params)
       .then(async res => {
         if (res.data.offset != null) {
           let records = res.data.records;
@@ -47,8 +51,7 @@ class AirtableCall {
   }
 
   static getAirtableByAirtableId(table, id) {
-    return axiosInstance.airtable
-      .get(table + "/" + id)
+    return Airtable.get(table + "/" + id)
       .then(res => {
         return res;
       })
@@ -58,16 +61,15 @@ class AirtableCall {
   }
 
   static postAirtable(table, data) {
-    return axiosInstance.airtable
-      .post(
-        table,
-        { fields: data },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
+    return Airtable.post(
+      table,
+      { fields: data },
+      {
+        headers: {
+          "Content-Type": "application/json"
         }
-      )
+      }
+    )
       .then(res => {
         return res;
       })
@@ -77,16 +79,15 @@ class AirtableCall {
   }
 
   static putAirtable(table, id, data) {
-    return axiosInstance.airtable
-      .put(
-        table + "/" + id,
-        { fields: data },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
+    return Airtable.put(
+      table + "/" + id,
+      { fields: data },
+      {
+        headers: {
+          "Content-Type": "application/json"
         }
-      )
+      }
+    )
       .then(res => {
         return res;
       })
@@ -96,8 +97,7 @@ class AirtableCall {
   }
 
   static deleteAirtable(table, id) {
-    return axiosInstance.airtable
-      .delete(table + "/" + id)
+    return Airtable.delete(table + "/" + id)
       .then(() => {
         return;
       })

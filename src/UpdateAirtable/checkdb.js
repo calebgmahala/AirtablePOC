@@ -38,16 +38,17 @@ module.exports.CheckUpdated = async (model, table, lastRun) => {
   });
   await Promise.all(
     updatedData.map(data => {
-      return Airtable.getAirtableIdByCustomField(table, data.id).then(
-        async records => {
-          // PUT data to airtable
-          await Promise.all(
-            records.map(record => {
-              return Airtable.putAirtable(table, record.id, data.dataValues);
-            })
-          );
-        }
-      );
+      return Airtable.getAirtableIdByCustomField(
+        table,
+        data.dataValues.id
+      ).then(async records => {
+        // PUT data to airtable
+        await Promise.all(
+          records.map(record => {
+            return Airtable.putAirtable(table, record.id, data.dataValues);
+          })
+        );
+      });
     })
   );
 };
@@ -68,16 +69,17 @@ module.exports.CheckDeleted = async (model, table, lastRun) => {
   // Get data from airtable (we need the airtable id in order to query for delete)
   await Promise.all(
     deletedData.map(data => {
-      return Airtable.getAirtableIdByCustomField(table, data.id).then(
-        async records => {
-          // DELETE data from airtable
-          await Promise.all(
-            records.map(record => {
-              return Airtable.deleteAirtable(table, record.id);
-            })
-          );
-        }
-      );
+      return Airtable.getAirtableIdByCustomField(
+        table,
+        data.dataValues.id
+      ).then(async records => {
+        // DELETE data from airtable
+        await Promise.all(
+          records.map(record => {
+            return Airtable.deleteAirtable(table, record.id);
+          })
+        );
+      });
     })
   );
 };

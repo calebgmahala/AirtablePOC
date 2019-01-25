@@ -13,6 +13,12 @@ const sequelize = new Sequelize(
   }
 );
 
+module.exports.tables = {
+  Artist: "artists",
+  Album: "albums",
+  User_Album: "users_albums"
+};
+
 const models = ["Artist", "User", "Album", "User_Album"];
 
 models.map(model => {
