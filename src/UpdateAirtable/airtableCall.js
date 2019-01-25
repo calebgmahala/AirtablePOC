@@ -6,14 +6,21 @@ Airtable = axios.create({
   headers: { Authorization: "Bearer " + process.env.AIRTABLE_SECRET }
 });
 
+// Axios Degubber, uncomment the function below
+// Airtable.interceptors.request.use(request => {
+//   console.log("Starting Request", request);
+//   return request;
+// });
+
 class AirtableCall {
   static getAirtableIdByCustomField(
     table,
     value,
     customField = "id",
-    offset = null,
+    offset = null, // Used for pagination
     fields = ["id"]
   ) {
+    // Params used to query by custom field
     let params = {
       params: {
         fields: fields,
@@ -21,6 +28,7 @@ class AirtableCall {
       }
     };
 
+    // Used for pagination
     if (offset != null) {
       params.params = {
         fields: fields,
@@ -30,6 +38,7 @@ class AirtableCall {
 
     return Airtable.get(table, params)
       .then(async res => {
+        // If there is an offset, re-call this function with the offset param
         if (res.data.offset != null) {
           let records = res.data.records;
           await this.getAirtableIdByCustomField(
@@ -38,8 +47,10 @@ class AirtableCall {
             value,
             res.data.offset
           ).then(res2 => {
+            // Add all records to to higher scope variable
             res2.forEach(x => records.push(x));
           });
+
           return records;
         } else {
           return res.data.records;
@@ -74,7 +85,7 @@ class AirtableCall {
         return res;
       })
       .catch(err => {
-        return err;
+        throw err;
       });
   }
 

@@ -9,19 +9,34 @@ const Tables = Models.tables;
 module.exports.updateAirtable = async (event, context) => {
   // Sets current date and calculates the last date this function ran
   const currentDate = new Date();
-  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 5);
+  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100);
 
+  /* Params
+   * Models[model] = sequelize model
+   * Tables[model].table = db table name
+   * lastRun = last run of lambda function
+   * Tables[model].keys = foreign keys
+   */
   await Promise.all(
     Object.keys(Tables).map(async model => {
       return Promise.all([
-        Checkdb.CheckNew(Models[model], Tables[model], lastRun),
-        Checkdb.CheckUpdated(Models[model], Tables[model], lastRun),
-        Checkdb.CheckDeleted(Models[model], Tables[model], lastRun)
+        Checkdb.CheckNew(
+          Models[model],
+          Tables[model].table,
+          lastRun,
+          Tables[model].keys
+        ),
+        Checkdb.CheckUpdated(
+          Models[model],
+          Tables[model].table,
+          lastRun,
+          Tables[model].keys
+        ),
+        Checkdb.CheckDeleted(Models[model], Tables[model].table, lastRun)
       ]);
     })
   )
     .then(() => {
-      console.log("here");
       return {
         statusCode: 200,
         body: JSON.stringify("done")

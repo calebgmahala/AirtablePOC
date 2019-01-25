@@ -6,7 +6,7 @@ const Op = Sequelize.Op;
 
 // CHECK FOR NEW
 // -------------
-module.exports.CheckNew = async (model, table, lastRun) => {
+module.exports.CheckNew = async (model, table, lastRun, foreignKeys) => {
   // Find all data in database created since last lambda run
   const newData = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
@@ -16,17 +16,37 @@ module.exports.CheckNew = async (model, table, lastRun) => {
       }
     }
   });
-  // POST all data to airtable
+
+  // Find foreign keys id's in airtable
   await Promise.all(
-    newData.map(data => {
-      return Airtable.postAirtable(table, data.dataValues);
+    newData.map(async data => {
+      await Promise.all(
+        Object.keys(foreignKeys).map(key => {
+          return Airtable.getAirtableIdByCustomField(
+            foreignKeys[key],
+            data.dataValues[key]
+          );
+        })
+      ).then(values => {
+        // Substitute foreign key from db with foreign key from airtable
+        values.forEach((key, index) => {
+          data.dataValues[Object.keys(foreignKeys)[index]] = key.map(val => {
+            return val.id;
+          });
+        });
+      });
+
+      // POST all data to airtable
+      return Airtable.postAirtable(table, data.dataValues).catch(err =>
+        console.log("this is err: " + err)
+      );
     })
   );
 };
 
 // CHECK FOR UPDATED
 // -----------------
-module.exports.CheckUpdated = async (model, table, lastRun) => {
+module.exports.CheckUpdated = async (model, table, lastRun, foreignKeys) => {
   // Find all data in database updated since last lambda run
   const updatedData = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
@@ -36,8 +56,27 @@ module.exports.CheckUpdated = async (model, table, lastRun) => {
       }
     }
   });
+
+  // Find foreign keys id's in airtable
   await Promise.all(
-    updatedData.map(data => {
+    updatedData.map(async data => {
+      await Promise.all(
+        Object.keys(foreignKeys).map(key => {
+          return Airtable.getAirtableIdByCustomField(
+            foreignKeys[key],
+            data.dataValues[key]
+          );
+        })
+      ).then(values => {
+        // Substitute foreign key from db with foreign key from airtable
+        values.forEach((key, index) => {
+          data.dataValues[Object.keys(foreignKeys)[index]] = key.map(val => {
+            return val.id;
+          });
+        });
+      });
+
+      // Get the airtable id of the row to be updated
       return Airtable.getAirtableIdByCustomField(
         table,
         data.dataValues.id
