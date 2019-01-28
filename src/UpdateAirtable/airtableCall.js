@@ -1,5 +1,11 @@
 require("dotenv").config({ path: "../../.env" });
 const axios = require("axios");
+const Bottleneck = require("bottleneck");
+
+const limiter = new Bottleneck({
+  maxConcurrent: 1,
+  minTime: 200
+});
 
 Airtable = axios.create({
   baseURL: "https://api.airtable.com/v0/" + process.env.AIRTABLE_BASE + "/",
@@ -36,20 +42,25 @@ class AirtableCall {
       };
     }
 
-    return Airtable.get(table, params)
+    return limiter
+      .schedule(() => Airtable.get(table, params))
       .then(async res => {
         // If there is an offset, re-call this function with the offset param
         if (res.data.offset != null) {
           let records = res.data.records;
-          await this.getAirtableIdByCustomField(
-            table,
-            customField,
-            value,
-            res.data.offset
-          ).then(res2 => {
-            // Add all records to to higher scope variable
-            res2.forEach(x => records.push(x));
-          });
+          await limiter
+            .schedule(() =>
+              this.getAirtableIdByCustomField(
+                table,
+                customField,
+                value,
+                res.data.offset
+              )
+            )
+            .then(res2 => {
+              // Add all records to to higher scope variable
+              res2.forEach(x => records.push(x));
+            });
 
           return records;
         } else {
@@ -62,7 +73,8 @@ class AirtableCall {
   }
 
   static getAirtableByAirtableId(table, id) {
-    return Airtable.get(table + "/" + id)
+    return limiter
+      .schedule(Airtable.get(table + "/" + id))
       .then(res => {
         return res;
       })
@@ -72,15 +84,18 @@ class AirtableCall {
   }
 
   static postAirtable(table, data) {
-    return Airtable.post(
-      table,
-      { fields: data },
-      {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    )
+    return limiter
+      .schedule(() =>
+        Airtable.post(
+          table,
+          { fields: data },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        )
+      )
       .then(res => {
         return res;
       })
@@ -90,15 +105,39 @@ class AirtableCall {
   }
 
   static putAirtable(table, id, data) {
-    return Airtable.put(
-      table + "/" + id,
-      { fields: data },
-      {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    )
+    return limiter
+      .schedule(() =>
+        Airtable.put(
+          table + "/" + id,
+          { fields: data },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        )
+      )
+      .then(res => {
+        return res;
+      })
+      .catch(err => {
+        return err;
+      });
+  }
+
+  static patchAirtable(table, id, data) {
+    return limiter
+      .schedule(() =>
+        Airtable.patch(
+          table + "/" + id,
+          { fields: data },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        )
+      )
       .then(res => {
         return res;
       })
@@ -108,7 +147,8 @@ class AirtableCall {
   }
 
   static deleteAirtable(table, id) {
-    return Airtable.delete(table + "/" + id)
+    return limiter
+      .schedule(() => Airtable.delete(table + "/" + id))
       .then(() => {
         return;
       })

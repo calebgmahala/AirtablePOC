@@ -9,10 +9,13 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true
       },
       username: Sequelize.STRING(64),
-      password: Sequelize.STRING(64)
+      password: Sequelize.STRING(64),
+      createdAt: { type: Sequelize.DATE, field: "createdat" },
+      updatedAt: { type: Sequelize.DATE, field: "updatedat" },
+      deletedAt: { type: Sequelize.DATE, field: "deletedat" }
     },
     {
-      timestamps: false
+      paranoid: true
     }
   );
 };

@@ -4,9 +4,30 @@ const Airtable = require("./airtableCall");
 
 const Op = Sequelize.Op;
 
+const promiseMtoM = values => {
+  return Promise.all(
+    values[0].map(row => {
+      const primary = Object.keys(foreignKeys)[0];
+      const secondary = Object.keys(foreignKeys)[1];
+      let data = {};
+      data[secondary] = [];
+      if (row.fields[secondary]) {
+        data[secondary] = row.fields[secondary];
+      } else {
+        row.fields[secondary] = [];
+      }
+      values[1].forEach(val => {
+        data[secondary] = data[secondary].concat(val.id);
+      });
+      data[secondary.concat(row.fields[secondary])];
+      return Airtable.patchAirtable(foreignKeys[primary], row.id, data);
+    })
+  );
+};
+
 // CHECK FOR NEW
 // -------------
-module.exports.CheckNew = async (model, table, lastRun, foreignKeys) => {
+module.exports.CheckNew = async (model, table, lastRun, foreignKeys, MtoM) => {
   // Find all data in database created since last lambda run
   const newData = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
@@ -27,19 +48,44 @@ module.exports.CheckNew = async (model, table, lastRun, foreignKeys) => {
             data.dataValues[key]
           );
         })
-      ).then(values => {
-        // Substitute foreign key from db with foreign key from airtable
-        values.forEach((key, index) => {
-          data.dataValues[Object.keys(foreignKeys)[index]] = key.map(val => {
-            return val.id;
+      ).then(async values => {
+        if (MtoM) {
+          await Promise.all(
+            values[0].map(row => {
+              const primary = Object.keys(foreignKeys)[0];
+              const secondary = Object.keys(foreignKeys)[1];
+              let data = {};
+              data[secondary] = [];
+              if (row.fields[secondary]) {
+                data[secondary] = row.fields[secondary];
+              } else {
+                row.fields[secondary] = [];
+              }
+              values[1].forEach(val => {
+                data[secondary] = data[secondary].concat(val.id);
+              });
+              data[secondary.concat(row.fields[secondary])];
+              return Airtable.patchAirtable(foreignKeys[primary], row.id, data);
+            })
+          );
+        } else {
+          // Substitute foreign key from db with foreign key from airtable
+          values.forEach((key, index) => {
+            data.dataValues[Object.keys(foreignKeys)[index]] = key.map(val => {
+              return val.id;
+            });
           });
-        });
+        }
       });
 
       // POST all data to airtable
-      return Airtable.postAirtable(table, data.dataValues).catch(err =>
-        console.log("this is err: " + err)
-      );
+      if (MtoM != true) {
+        return (
+          Airtable.postAirtable(table, data.dataValues)
+            // .then(resp => console.log(resp))
+            .catch(err => console.log("this is err: " + err))
+        );
+      }
     })
   );
 };
@@ -84,7 +130,7 @@ module.exports.CheckUpdated = async (model, table, lastRun, foreignKeys) => {
         // PUT data to airtable
         await Promise.all(
           records.map(record => {
-            return Airtable.putAirtable(table, record.id, data.dataValues);
+            return Airtable.patchAirtable(table, record.id, data.dataValues);
           })
         );
       });

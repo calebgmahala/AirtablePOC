@@ -10,7 +10,8 @@ const sequelize = new Sequelize(
     dialect: "postgres",
     host: process.env.DATABASE_HOST,
     port: process.env.DATABASE_PORT,
-    omitNull: true
+    omitNull: true,
+    logging: false
   }
 );
 
@@ -19,15 +20,31 @@ const sequelize = new Sequelize(
  * The table key should be the name of the table in the db
  * The keys key should contain the foreign keys of the model.
  * The key of the foreign key should be the name of the column in your db.
- * The value of the foreign key should be the table the key references
+ * The value of the foreign key should be the table the key references.
+ * The MtoM key is for tables that represents a Many to Many relationship
+ * Only set MtoM to true if you plan on using Airtables Many to Many service
  * See example below
  */
 module.exports.tables = {
-  Artist: { table: "artists", keys: [] },
-  Album: { table: "albums", keys: { artistid: "artists" } },
+  Artist: {
+    table: "artists",
+    keys: {},
+    MtoM: false
+  },
+  User: {
+    table: "users",
+    keys: {},
+    MtoM: false
+  },
+  Album: {
+    table: "albums",
+    keys: { artistid: "artists" },
+    MtoM: false
+  },
   User_Album: {
     table: "user_albums",
-    keys: { userid: "users", albumid: "albums" }
+    keys: { userid: "users", albumid: "albums" },
+    MtoM: true
   }
 };
 
@@ -37,7 +54,7 @@ models.map(model => {
   module.exports[model] = sequelize.import(__dirname + "/" + model);
 });
 
-// Connections
+// Foreign key connections
 (m => {
   m.Album.belongsTo(m.Artist, {
     foreignKey: "artistid"
