@@ -23,7 +23,7 @@ const promisedb = checklist => {
 module.exports.updateAirtable = async (event, context) => {
   // Sets current date and calculates the last date this function ran
   const currentDate = new Date();
-  // --const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 5);
+  // const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 5);
   const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100000);
 
   /* Params
@@ -43,11 +43,18 @@ module.exports.updateAirtable = async (event, context) => {
         Tables[model].keys,
         Tables[model].MtoM
       ),
-      Checkdb.CheckDeleted(Models[model], Tables[model].table, lastRun)
+      Checkdb.CheckDeleted(
+        Models[model],
+        Tables[model].table,
+        lastRun,
+        Tables[model].keys,
+        Tables[model].MtoM
+      )
     ];
 
     if (Tables[model].MtoM) {
       await promisedb(dbcheck);
+      // Adds updated if not a many to many relationship
     } else {
       dbcheck.splice(
         1,

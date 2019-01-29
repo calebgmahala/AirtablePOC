@@ -3,7 +3,6 @@ const axios = require("axios");
 const Bottleneck = require("bottleneck");
 
 const limiter = new Bottleneck({
-  maxConcurrent: 1,
   minTime: 200
 });
 
@@ -79,7 +78,7 @@ class AirtableCall {
         return res;
       })
       .catch(err => {
-        return err;
+        throw err;
       });
   }
 
@@ -121,7 +120,7 @@ class AirtableCall {
         return res;
       })
       .catch(err => {
-        return err;
+        throw err;
       });
   }
 
@@ -142,7 +141,7 @@ class AirtableCall {
         return res;
       })
       .catch(err => {
-        return err;
+        throw err;
       });
   }
 
@@ -153,7 +152,7 @@ class AirtableCall {
         return;
       })
       .catch(err => {
-        return err;
+        throw err;
       });
   }
 }

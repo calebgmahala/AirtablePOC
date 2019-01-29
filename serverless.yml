@@ -30,3 +30,9 @@ functions:
       - http:
           path: artists/(id)
           method: delete
+  deleteLink:
+    handler: src/Artists/handler.deleteLink
+    events:
+      - http:
+          path: link/(id)
+          method: delete
