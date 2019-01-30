@@ -24,7 +24,7 @@ module.exports.updateAirtable = async (event, context) => {
   // Sets current date and calculates the last date this function ran
   const currentDate = new Date();
   // const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 5);
-  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100000);
+  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100);
 
   /* Params
    * Models[model] = sequelize model

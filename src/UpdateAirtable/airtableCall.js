@@ -41,6 +41,10 @@ class AirtableCall {
       };
     }
 
+    if ((fields = "all")) {
+      delete params.params.fields;
+    }
+
     return limiter
       .schedule(() => Airtable.get(table, params))
       .then(async res => {

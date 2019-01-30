@@ -4,46 +4,76 @@ const Airtable = require("./airtableCall");
 
 const Op = Sequelize.Op;
 
-// Many to Many Helper
-const promiseMtoM = (values, foreignKeys, del = false) => {
-  return Promise.all(
-    values[0].map(row => {
-      // Key linking to the table we are editing in airtable
-      const primary = Object.keys(foreignKeys)[0];
+// Many to many helper
+const promiseMtoM = (values, foreignKeys, store, del = false) => {
+  // Other key we are pulling data from to add to store
+  const secondary = Object.keys(foreignKeys)[1];
 
-      // Other key we are pulling data from to add to primary
-      const secondary = Object.keys(foreignKeys)[1];
-      let data = {};
-      data[secondary] = [];
-
-      // Keeps any previous values on primary table
-      if (row.fields[secondary]) {
-        data[secondary] = row.fields[secondary];
+  // Look through the foreign key values
+  values[0].forEach(row => {
+    values[1].forEach(val => {
+      if (store[row.id] != undefined) {
+        store[row.id][secondary] = store[row.id][secondary].concat(val.id);
       } else {
-        row.fields[secondary] = [];
-      }
-
-      values[1].forEach(val => {
+        store[row.id] = {};
         if (del == true) {
-          delete data[secondary][
-            data[secondary].findIndex(e => {
+          store[row.id][secondary] = row.fields[secondary];
+          store[row.id][secondary].splice(
+            store[row.id][secondary].findIndex(e => {
               return (e = val.id);
-            })
-          ];
+            }),
+            1
+          );
         } else {
-          data[secondary] = data[secondary].concat(val.id);
+          store[row.id][secondary] = [val.id];
         }
-      });
-      data[secondary].concat(row.fields[secondary]);
-      return Airtable.patchAirtable(foreignKeys[primary], row.id, data).catch(
-        err => err
-      );
+      }
+    });
+  });
+};
+
+// Patch request for many to many helper
+const promiseMtoMPatch = (foreignKeys, store) => {
+  return Promise.all(
+    Object.keys(store).map(key => {
+      return Airtable.patchAirtable(
+        foreignKeys[Object.keys(foreignKeys)[0]],
+        key,
+        store[key]
+      ).catch(err => err);
     })
-  );
+  ).catch(err => err);
+};
+
+// Foreign key Iterator
+const eachForeignKey = (foreignKeys, data, all = null) => {
+  if ((all = null)) {
+    return Object.keys(foreignKeys).map(key => {
+      return Airtable.getAirtableIdByCustomField(
+        foreignKeys[key],
+        data.dataValues[key]
+      ).catch(err => {
+        throw err;
+      });
+    });
+  } else {
+    return Object.keys(foreignKeys).map(key => {
+      return Airtable.getAirtableIdByCustomField(
+        foreignKeys[key],
+        data.dataValues[key],
+        (customField = "id"),
+        (offset = null),
+        (fields = "all")
+      ).catch(err => {
+        throw err;
+      });
+    });
+  }
 };
 
 // CHECK FOR NEW
 module.exports.CheckNew = async (model, table, lastRun, foreignKeys, MtoM) => {
+  let store = {};
   // Find all data in database created since last lambda run
   const newData = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
@@ -57,19 +87,10 @@ module.exports.CheckNew = async (model, table, lastRun, foreignKeys, MtoM) => {
   // Find foreign keys id's in airtable
   await Promise.all(
     newData.map(async data => {
-      await Promise.all(
-        Object.keys(foreignKeys).map(key => {
-          return Airtable.getAirtableIdByCustomField(
-            foreignKeys[key],
-            data.dataValues[key]
-          ).catch(err => {
-            throw err;
-          });
-        })
-      )
+      await Promise.all(eachForeignKey(foreignKeys, data))
         .then(async values => {
           if (MtoM) {
-            await promiseMtoM(values, foreignKeys);
+            await promiseMtoM(values, foreignKeys, store);
           } else {
             // Substitute foreign key from db with foreign key from airtable
             values.forEach((key, index) => {
@@ -86,14 +107,11 @@ module.exports.CheckNew = async (model, table, lastRun, foreignKeys, MtoM) => {
         });
       // POST all data to airtable
       if (MtoM != true) {
-        return (
-          Airtable.postAirtable(table, data.dataValues)
-            // .then(resp => console.log(resp))
-            .catch(err => {
-              throw err;
-            })
-        );
+        return Airtable.postAirtable(table, data.dataValues).catch(err => {
+          throw err;
+        });
       }
+      await promiseMtoMPatch(foreignKeys, store);
     })
   );
 };
@@ -113,14 +131,7 @@ module.exports.CheckUpdated = async (model, table, lastRun, foreignKeys) => {
   // Find foreign keys id's in airtable
   await Promise.all(
     updatedData.map(async data => {
-      await Promise.all(
-        Object.keys(foreignKeys).map(key => {
-          return Airtable.getAirtableIdByCustomField(
-            foreignKeys[key],
-            data.dataValues[key]
-          );
-        })
-      ).then(values => {
+      await Promise.all(eachForeignKey(foreignKeys, data)).then(values => {
         // Substitute foreign key from db with foreign key from airtable
         values.forEach((key, index) => {
           data.dataValues[Object.keys(foreignKeys)[index]] = key.map(val => {
@@ -153,6 +164,7 @@ module.exports.CheckDeleted = async (
   foreignKeys,
   MtoM
 ) => {
+  let newList = {};
   // Find all data in database deleted since last lambda run
   const deletedData = await model.findAll({
     attributes: MtoM ? Object.keys(foreignKeys) : ["id"],
@@ -168,16 +180,13 @@ module.exports.CheckDeleted = async (
     deletedData.map(data => {
       if (MtoM == true) {
         // Find foreign keys id's in airtable
-        return Promise.all(
-          Object.keys(foreignKeys).map(key => {
-            return Airtable.getAirtableIdByCustomField(
-              foreignKeys[key],
-              data.dataValues[key]
-            );
-          })
-        ).then(async values => {
-          await promiseMtoM(values, foreignKeys, (del = true));
-        });
+        return Promise.all(eachForeignKey(foreignKeys, data, "all")).then(
+          async values => {
+            console.log("here");
+            await promiseMtoM(values, foreignKeys, newList, (del = true));
+            console.log("moving on");
+          }
+        );
       } else {
         return Airtable.getAirtableIdByCustomField(
           table,
@@ -193,4 +202,6 @@ module.exports.CheckDeleted = async (
       }
     })
   );
+  console.log(newList);
+  await promiseMtoMPatch(foreignKeys, newList);
 };
