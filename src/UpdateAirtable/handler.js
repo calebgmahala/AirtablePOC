@@ -1,72 +1,41 @@
-const Models = require("../../models/index");
-const Checkdb = require("./checkdb");
-const Tables = Models.tables;
-("use strict");
+const sequelizeModels = require("../../models/index");
+const {
+  checkForCreatedAt,
+  checkForUpdatedAt,
+  checkForDeletedAt
+} = require("./checkdb");
 
-// Helper functions
-const promisedb = checklist => {
-  return Promise.all(checklist)
-    .then(() => {
-      return {
-        statusCode: 200,
-        body: JSON.stringify("done")
-      };
-    })
-    .catch(() => {
-      return {
-        statusCode: 404,
-        body: JSON.stringify("err")
-      };
-    });
-};
+const tables = sequelizeModels.tables;
 
 module.exports.updateAirtable = async (event, context) => {
   // Sets current date and calculates the last date this function ran
   const currentDate = new Date();
   // const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 5);
-  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100);
+  const lastRun = currentDate.setMinutes(currentDate.getMinutes() - 100000);
 
-  /* Params
-   * Models[model] = sequelize model
-   * Tables[model].table = db table name
-   * lastRun = last run of lambda function
-   * Tables[model].keys = foreign keys
-   * Tables[model].MtoM = Many to Many relationship (true:false)
-   */
-  for (const model of Object.keys(Tables)) {
-    // Variable to minimize requests for many to many relationship tables
-    let dbcheck = [
-      Checkdb.CheckNew(
-        Models[model],
-        Tables[model].table,
+  for (const { model, table, foreignKeys, isManyToMany } of tables) {
+    console.log(table + "-------");
+    await checkForCreatedAt(
+      sequelizeModels[model],
+      table,
+      lastRun,
+      foreignKeys,
+      isManyToMany
+    );
+    if (!isManyToMany) {
+      await checkForUpdatedAt(
+        sequelizeModels[model],
+        table,
         lastRun,
-        Tables[model].keys,
-        Tables[model].MtoM
-      ),
-      Checkdb.CheckDeleted(
-        Models[model],
-        Tables[model].table,
-        lastRun,
-        Tables[model].keys,
-        Tables[model].MtoM
-      )
-    ];
-
-    if (Tables[model].MtoM) {
-      await promisedb(dbcheck);
-      // Adds updated if not a many to many relationship
-    } else {
-      dbcheck.splice(
-        1,
-        0,
-        Checkdb.CheckUpdated(
-          Models[model],
-          Tables[model].table,
-          lastRun,
-          Tables[model].keys
-        )
+        foreignKeys
       );
-      await promisedb(dbcheck);
     }
+    await checkForDeletedAt(
+      sequelizeModels[model],
+      table,
+      lastRun,
+      foreignKeys,
+      isManyToMany
+    );
   }
 };

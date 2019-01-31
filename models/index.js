@@ -25,32 +25,40 @@ const sequelize = new Sequelize(
  * Only set MtoM to true if you plan on using Airtables Many to Many service
  * See example below
  */
-module.exports.tables = {
-  Artist: {
-    table: "artists",
-    keys: {},
-    MtoM: false
+module.exports.tables = [
+  {
+    model: "Artist",
+    table: "artists"
   },
-  User: {
-    table: "users",
-    keys: {},
-    MtoM: false
+  {
+    model: "User",
+    table: "users"
   },
-  Album: {
+  {
+    model: "Album",
     table: "albums",
-    keys: { artistid: "artists" },
-    MtoM: false
+    foreignKeys: [{ fieldName: "artistid", table: "artists" }]
   },
-  User_Album: {
+  {
+    model: "User_Album",
     table: "user_albums",
-    keys: { userid: "users", albumid: "albums" },
-    MtoM: true
+    foreignKeys: [
+      {
+        fieldName: "userid",
+        table: "users"
+      },
+      {
+        fieldName: "albumid",
+        table: "albums"
+      }
+    ],
+    isManyToMany: true
   }
-};
+];
 
 // List of models to include in the export
-const models = ["Artist", "User", "Album", "User_Album"];
-models.map(model => {
+const sequelizeModels = ["Artist", "User", "Album", "User_Album"];
+sequelizeModels.map(model => {
   module.exports[model] = sequelize.import(__dirname + "/" + model);
 });
 

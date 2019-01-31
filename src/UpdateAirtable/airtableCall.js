@@ -18,17 +18,15 @@ Airtable = axios.create({
 // });
 
 class AirtableCall {
-  static getAirtableIdByCustomField(
+  static getAirtableByCustomField(
     table,
     value,
     customField = "id",
-    offset = null, // Used for pagination
-    fields = ["id"]
+    offset = null // Used for pagination
   ) {
     // Params used to query by custom field
     let params = {
       params: {
-        fields: fields,
         filterByFormula: "{" + customField + "}=" + value
       }
     };
@@ -36,36 +34,33 @@ class AirtableCall {
     // Used for pagination
     if (offset != null) {
       params.params = {
-        fields: fields,
         offset: offset
       };
     }
 
-    if ((fields = "all")) {
-      delete params.params.fields;
-    }
+    const getAirtableCallback = async records => {
+      await limiter
+        .schedule(() =>
+          this.getAirtableIdByCustomField(
+            table,
+            customField,
+            value,
+            res.data.offset
+          )
+        )
+        .then(res => {
+          // Add all records to to higher scope variable
+          res.forEach(x => records.push(x));
+        });
+    };
 
     return limiter
       .schedule(() => Airtable.get(table, params))
       .then(async res => {
         // If there is an offset, re-call this function with the offset param
         if (res.data.offset != null) {
-          let records = res.data.records;
-          await limiter
-            .schedule(() =>
-              this.getAirtableIdByCustomField(
-                table,
-                customField,
-                value,
-                res.data.offset
-              )
-            )
-            .then(res2 => {
-              // Add all records to to higher scope variable
-              res2.forEach(x => records.push(x));
-            });
-
-          return records;
+          await getAirtableCallback(res.data.records);
+          return res.data.records;
         } else {
           return res.data.records;
         }
