@@ -4,9 +4,12 @@ const {
   swapIdWithAirtableId,
   addAirtableIdToStoredValues,
   addManyToManyAirtableIdToStoredValues,
-  removeManyToManyAirtableIdFromStoredValues,
-  handleError
+  removeManyToManyAirtableIdFromStoredValues
 } = require("./airtableHelpers");
+
+const handleError = err => {
+  throw err;
+};
 
 module.exports.handlePostRequest = async (table, foreignKeys, dataFromDb) => {
   let postData = dataFromDb;
@@ -58,7 +61,7 @@ module.exports.handleDeleteRequest = async (table, dataFromDb) => {
     airtableReturnList.map(airtableId => {
       Airtable.deleteAirtable(table, airtableId.id);
     })
-  );
+  ).catch(err => handleError(err));
 };
 
 module.exports.handleManyToMany = async (
@@ -91,5 +94,5 @@ module.exports.patchFromStoredValues = (storedValues, table) => {
         err => err
       );
     })
-  ).catch(err => err);
+  ).catch(err => handleError(err));
 };

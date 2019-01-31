@@ -9,6 +9,10 @@ const {
 
 const Op = Sequelize.Op;
 
+const handleError = err => {
+  throw err;
+};
+
 module.exports.checkForCreatedAt = async (
   model,
   table,
@@ -35,7 +39,7 @@ module.exports.checkForCreatedAt = async (
         return handlePostRequest(table, foreignKeys, dataValues);
       }
     })
-  );
+  ).catch(err => handleError(err));
 
   if (isManyToMany) {
     await patchFromStoredValues(storedValues, foreignKeys[0].table);
@@ -68,7 +72,7 @@ module.exports.checkForUpdatedAt = async (
     updatedAtRows.map(({ dataValues }) => {
       return handlePatchRequest(storedValues, table, foreignKeys, dataValues);
     })
-  );
+  ).catch(err => handleError(err));
   await patchFromStoredValues(storedValues, table);
 };
 
@@ -104,7 +108,7 @@ module.exports.checkForDeletedAt = async (
         return handleDeleteRequest(table, dataValues);
       }
     })
-  );
+  ).catch(err => handleError(err));
 
   if (isManyToMany) {
     await patchFromStoredValues(storedValues, foreignKeys[0].table);

@@ -11,149 +11,109 @@ Airtable = axios.create({
   headers: { Authorization: "Bearer " + process.env.AIRTABLE_SECRET }
 });
 
-// Axios Degubber, uncomment the function below
+// Axios Debuger, uncomment the function below
 // Airtable.interceptors.request.use(request => {
 //   console.log("Starting Request", request);
 //   return request;
 // });
 
-class AirtableCall {
-  static getAirtableByCustomField(
-    table,
-    value,
-    customField = "id",
-    offset = null // Used for pagination
-  ) {
-    // Params used to query by custom field
-    let params = {
-      params: {
-        filterByFormula: "{" + customField + "}=" + value
-      }
-    };
+const handleError = err => {
+  throw err;
+};
 
-    // Used for pagination
-    if (offset != null) {
-      params.params = {
-        offset: offset
-      };
+module.exports.getAirtableByCustomField = (
+  table,
+  value,
+  customField = "id",
+  offset = null // Used for pagination
+) => {
+  // Params used to query by custom field
+  let params = {
+    params: {
+      filterByFormula: "{" + customField + "}=" + value
     }
+  };
 
-    const getAirtableCallback = async records => {
-      await limiter
-        .schedule(() =>
-          this.getAirtableIdByCustomField(
-            table,
-            customField,
-            value,
-            res.data.offset
-          )
-        )
-        .then(res => {
-          // Add all records to to higher scope variable
-          res.forEach(x => records.push(x));
-        });
+  // Used for pagination
+  if (offset != null) {
+    params.params = {
+      offset: offset
     };
-
-    return limiter
-      .schedule(() => Airtable.get(table, params))
-      .then(async res => {
-        // If there is an offset, re-call this function with the offset param
-        if (res.data.offset != null) {
-          await getAirtableCallback(res.data.records);
-          return res.data.records;
-        } else {
-          return res.data.records;
-        }
-      })
-      .catch(err => {
-        return err;
-      });
   }
 
-  static getAirtableByAirtableId(table, id) {
-    return limiter
-      .schedule(Airtable.get(table + "/" + id))
-      .then(res => {
-        return res;
-      })
-      .catch(err => {
-        throw err;
-      });
-  }
-
-  static postAirtable(table, data) {
-    return limiter
+  const getAirtableCallback = async records => {
+    await limiter
       .schedule(() =>
-        Airtable.post(
+        this.getAirtableIdByCustomField(
           table,
-          { fields: data },
-          {
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
+          customField,
+          value,
+          res.data.offset
         )
       )
       .then(res => {
-        return res;
-      })
-      .catch(err => {
-        throw err;
+        // Add all records to to higher scope variable
+        res.forEach(x => records.push(x));
       });
-  }
+  };
 
-  static putAirtable(table, id, data) {
-    return limiter
-      .schedule(() =>
-        Airtable.put(
-          table + "/" + id,
-          { fields: data },
-          {
-            headers: {
-              "Content-Type": "application/json"
-            }
+  return limiter
+    .schedule(() => Airtable.get(table, params))
+    .then(async res => {
+      // If there is an offset, re-call this function with the offset param
+      if (res.data.offset != null) {
+        await getAirtableCallback(res.data.records);
+        return res.data.records;
+      } else {
+        return res.data.records;
+      }
+    })
+    .catch(err => handleError(err));
+};
+
+module.exports.postAirtable = (table, data) => {
+  return limiter
+    .schedule(() =>
+      Airtable.post(
+        table,
+        { fields: data },
+        {
+          headers: {
+            "Content-Type": "application/json"
           }
-        )
+        }
       )
-      .then(res => {
-        return res;
-      })
-      .catch(err => {
-        throw err;
-      });
-  }
+    )
+    .then(res => {
+      return res;
+    })
+    .catch(err => handleError(err));
+};
 
-  static patchAirtable(table, id, data) {
-    return limiter
-      .schedule(() =>
-        Airtable.patch(
-          table + "/" + id,
-          { fields: data },
-          {
-            headers: {
-              "Content-Type": "application/json"
-            }
+module.exports.patchAirtable = (table, id, data) => {
+  return limiter
+    .schedule(() =>
+      Airtable.patch(
+        table + "/" + id,
+        { fields: data },
+        {
+          headers: {
+            "Content-Type": "application/json"
           }
-        )
+        }
       )
-      .then(res => {
-        return res;
-      })
-      .catch(err => {
-        throw err;
-      });
-  }
+    )
+    .then(res => {
+      return res;
+    })
+    .catch(err => handleError(err));
+};
 
-  static deleteAirtable(table, id) {
-    return limiter
-      .schedule(() => Airtable.delete(table + "/" + id))
-      .then(() => {
-        return;
-      })
-      .catch(err => {
-        throw err;
-      });
-  }
-}
-
-module.exports = AirtableCall;
+module.exports.deleteAirtable = (table, id) => {
+  return limiter
+    .schedule(() => Airtable.delete(table + "/" + id))
+    .then(() => {
+      return;
+    })
+    .catch(err => handleError(err));
+};

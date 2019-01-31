@@ -1,11 +1,15 @@
 const Airtable = require("./airtableCall");
 
+const handleError = err => {
+  throw err;
+};
+
 module.exports.handleForeignKeys = (foreignKeys, dataFromDb) => {
   return Promise.all(
     foreignKeys.map(({ fieldName, table }) => {
       return Airtable.getAirtableByCustomField(table, dataFromDb[fieldName]);
     })
-  );
+  ).catch(err => handleError(err));
 };
 
 module.exports.swapIdWithAirtableId = (
@@ -75,8 +79,4 @@ module.exports.removeManyToManyAirtableIdFromStoredValues = (
       );
     });
   });
-};
-
-module.exports.handleError = err => {
-  throw err;
 };
