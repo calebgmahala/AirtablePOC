@@ -11,19 +11,18 @@ const sequelize = new Sequelize(
     host: process.env.DATABASE_HOST,
     port: process.env.DATABASE_PORT,
     omitNull: true,
-    logging: false
+    logging: false // Set to true for query logs
   }
 );
 
-/* List of Tables
- * The first keys represent the model name
- * The table key should be the name of the table in the db
- * The keys key should contain the foreign keys of the model.
- * The key of the foreign key should be the name of the column in your db.
- * The value of the foreign key should be the table the key references.
- * The MtoM key is for tables that represents a Many to Many relationship
- * Only set MtoM to true if you plan on using Airtables Many to Many service
- * See example below
+/* List of tables that will get updated
+ * model is sequelize model
+ * table is the airtable table name
+ * foreignKeys is an array of foreignKeys (Defaults to null)
+ * * fieldName is db fieldName
+ * * table is referenced table
+ * isManyToMany is for linking tables (Defaults to false)
+ * * you can leave isManyToMany false if you want the table displayed in airtable
  */
 module.exports.tables = [
   {

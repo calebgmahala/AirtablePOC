@@ -1,3 +1,4 @@
+// This file is strictly to test functionality and may be deleted.
 const models = require("../../models/index");
 ("use strict");
 const Artist = models.Artist;

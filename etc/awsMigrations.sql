@@ -1,35 +1,4 @@
--- replica db
-CREATE TABLE albums
-(
-    id SERIAL PRIMARY KEY,
-    title varchar(64) NOT NULL,
-    artist varchar(64) NOT NULL,
-    url varchar(128),
-    image varchar(128),
-    thumbnail_image varchar(128)
-);
-INSERT INTO albums
-    (title, artist, url, image, thumbnail_image)
-VALUES
-    ('Taylor Swift', 'Taylor Swift', 'https://www.amazon.com/Taylor-Swift/dp/B0014I4KH6', 'https://images-na.ssl-images-amazon.com/images/I/61McsadO1OL.jpg', 'https://i.imgur.com/K3KJ3w4h.jpg');
-INSERT INTO albums
-    (title, artist, url, image, thumbnail_image)
-VALUES
-    ('Fearless', 'Taylor Swift', 'https://www.amazon.com/Fearless-Enhanced-Taylor-Swift/dp/B001EYGOEM', 'https://images-na.ssl-images-amazon.com/images/I/51qmhXWZBxL.jpg', 'https://i.imgur.com/K3KJ3w4h.jpg');
-INSERT INTO albums
-    (title, artist, url, image, thumbnail_image)
-VALUES
-    ('Speak Now', 'Taylor Swift', 'https://www.amazon.com/Speak-Now-Taylor-Swift/dp/B003WTE886', 'https://images-na.ssl-images-amazon.com/images/I/51vlGuX7%2BFL.jpg', 'https://i.imgur.com/K3KJ3w4h.jpg');
-INSERT INTO albums
-    (title, artist, url, image, thumbnail_image)
-VALUES
-    ('Red', 'Taylor Swift', 'https://www.amazon.com/Red-Taylor-Swift/dp/B008XNZMOU', 'https://images-na.ssl-images-amazon.com/images/I/41j7-7yboXL.jpg', 'https://i.imgur.com/K3KJ3w4h.jpg');
-INSERT INTO albums
-    (title, artist, url, image, thumbnail_image)
-VALUES
-    ('1989', 'Taylor Swift', 'https://www.amazon.com/1989-Taylor-Swift/dp/B00MRHANNI', 'https://images-na.ssl-images-amazon.com/images/I/717DWgRftmL._SX522_.jpg', 'https://i.imgur.com/K3KJ3w4h.jpg');
--- better db
-
+-- Tables and Triggers
 CREATE OR REPLACE FUNCTION trigger_set_timestamp
 ()
 RETURNS TRIGGER AS $$
@@ -110,6 +79,7 @@ FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp
 ();
 
+-- Small Data. Use bigData.sql for bigger db
 INSERT INTO artists
     (name, image)
 VALUES

@@ -13,6 +13,7 @@ const handleError = err => {
   throw err;
 };
 
+// Check db for data created since last run
 module.exports.checkForCreatedAt = async (
   model,
   table,
@@ -22,6 +23,8 @@ module.exports.checkForCreatedAt = async (
 ) => {
   console.log("createdAt");
   let storedValues = {};
+  // Stored Value Structure
+  // { <id to push to>: {<fieldName>: <list of id's to patch up> } }
   const createdAtRows = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
     where: {
@@ -46,6 +49,7 @@ module.exports.checkForCreatedAt = async (
   }
 };
 
+// Check db for data updated since last run
 module.exports.checkForUpdatedAt = async (
   model,
   table,
@@ -53,6 +57,8 @@ module.exports.checkForUpdatedAt = async (
   foreignKeys = null
 ) => {
   console.log("updatedAt");
+  // Stored Value Structure
+  // { <id to push to>: {<fieldName>: <list of id's to patch up> } }
   let storedValues = {};
   const updatedAtRows = await model.findAll({
     attributes: { exclude: ["deletedAt"] },
@@ -62,6 +68,8 @@ module.exports.checkForUpdatedAt = async (
       }
     }
   });
+
+  // Prevent row from being updated if it was just created
   updatedAtRows.forEach(({ createdAt, updatedAt }, index, object) => {
     if (createdAt.valueOf() === updatedAt.valueOf()) {
       delete object[index];
@@ -73,9 +81,11 @@ module.exports.checkForUpdatedAt = async (
       return handlePatchRequest(storedValues, table, foreignKeys, dataValues);
     })
   ).catch(err => handleError(err));
+
   await patchFromStoredValues(storedValues, table);
 };
 
+// Check db for data deleted since last run
 module.exports.checkForDeletedAt = async (
   model,
   table,
@@ -84,6 +94,8 @@ module.exports.checkForDeletedAt = async (
   isManyToMany = false
 ) => {
   console.log("deletedAt");
+  // Stored Value Structure
+  // { <id to push to>: {<fieldName>: <list of id's to patch up> } }
   let storedValues = {};
   const deletedAtRows = await model.findAll({
     attributes: isManyToMany ? foreignKeys.map(key => key.fieldName) : ["id"],

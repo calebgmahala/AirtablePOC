@@ -5,7 +5,6 @@ provider:
   stage: dev
   profile: default
   environment:
-    TEST: "TEST"
     PGUSER: ${file(./env.js):env.DATABASE_USERNAME}
     PGPASSWORD: ${file(./env.js):env.DATABASE_PASSWORD}
     PGHOST: ${file(./env.js):env.DATABASE_HOST}
@@ -18,6 +17,8 @@ functions:
     handler: src/UpdateAirtable/handler.updateAirtable
     events:
       - schedule: rate(5 minutes)
+
+  # Testing Functions
   getArtists:
     handler: src/Artists/handler.getArtists
     events:

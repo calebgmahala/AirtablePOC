@@ -2,13 +2,17 @@ require("dotenv").config({ path: "../../.env" });
 const axios = require("axios");
 const Bottleneck = require("bottleneck");
 
+// Limits requests to 5 per second
 const limiter = new Bottleneck({
   minTime: 200
 });
 
 Airtable = axios.create({
   baseURL: "https://api.airtable.com/v0/" + process.env.AIRTABLE_BASE + "/",
-  headers: { Authorization: "Bearer " + process.env.AIRTABLE_SECRET }
+  headers: {
+    Authorization: "Bearer " + process.env.AIRTABLE_SECRET,
+    "Content-Type": "application/json"
+  }
 });
 
 // Axios Debuger, uncomment the function below
@@ -40,7 +44,7 @@ module.exports.getAirtableByCustomField = (
       offset: offset
     };
   }
-
+  // Callback function used to paginate and add to response object
   const getAirtableCallback = async records => {
     await limiter
       .schedule(() =>
@@ -73,17 +77,7 @@ module.exports.getAirtableByCustomField = (
 
 module.exports.postAirtable = (table, data) => {
   return limiter
-    .schedule(() =>
-      Airtable.post(
-        table,
-        { fields: data },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      )
-    )
+    .schedule(() => Airtable.post(table, { fields: data }))
     .then(res => {
       return res;
     })
@@ -92,17 +86,7 @@ module.exports.postAirtable = (table, data) => {
 
 module.exports.patchAirtable = (table, id, data) => {
   return limiter
-    .schedule(() =>
-      Airtable.patch(
-        table + "/" + id,
-        { fields: data },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      )
-    )
+    .schedule(() => Airtable.patch(table + "/" + id, { fields: data }))
     .then(res => {
       return res;
     })
