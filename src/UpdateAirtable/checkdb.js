@@ -43,7 +43,6 @@ module.exports.checkForCreatedAt = async (
       }
     })
   ).catch(err => handleError(err));
-
   if (isManyToMany) {
     await patchFromStoredValues(storedValues, foreignKeys[0].table);
   }

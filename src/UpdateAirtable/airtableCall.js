@@ -50,8 +50,8 @@ module.exports.getAirtableByCustomField = (
       .schedule(() =>
         this.getAirtableIdByCustomField(
           table,
-          customField,
           value,
+          customField,
           res.data.offset
         )
       )

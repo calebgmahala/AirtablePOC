@@ -104,6 +104,7 @@ module.exports.handleManyToMany = async (
 module.exports.patchFromStoredValues = (storedValues, table) => {
   return Promise.all(
     Object.keys(storedValues).map(key => {
+      console.log("patching");
       return Airtable.patchAirtable(table, key, storedValues[key]).catch(
         err => err
       );

@@ -56,9 +56,9 @@ module.exports.addManyToManyAirtableIdToStoredValues = (
     allAirtableForeignKeys[1].forEach(keysWeAdd => {
       if (keysWeEdit.id in storedValues) {
         // Append value to the object
-        storedValues[keysWeEdit.id][foreignKeys[1].fieldName] = value[
-          foreignKeys[1].fieldName
-        ].concat(keysWeAdd.id);
+        storedValues[keysWeEdit.id][foreignKeys[1].fieldName] = storedValues[
+          keysWeEdit.id
+        ][foreignKeys[1].fieldName].concat(keysWeAdd.id);
       } else {
         // Create the object
         storedValues[keysWeEdit.id] = {};

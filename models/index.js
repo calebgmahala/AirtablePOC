@@ -25,19 +25,19 @@ const sequelize = new Sequelize(
  * * you can leave isManyToMany false if you want the table displayed in airtable
  */
 module.exports.tables = [
-  {
-    model: "Artist",
-    table: "artists"
-  },
-  {
-    model: "User",
-    table: "users"
-  },
-  {
-    model: "Album",
-    table: "albums",
-    foreignKeys: [{ fieldName: "artistid", table: "artists" }]
-  },
+  // {
+  //   model: "Artist",
+  //   table: "artists"
+  // },
+  // {
+  //   model: "User",
+  //   table: "users"
+  // },
+  // {
+  //   model: "Album",
+  //   table: "albums",
+  //   foreignKeys: [{ fieldName: "artistid", table: "artists" }]
+  // },
   {
     model: "User_Album",
     table: "user_albums",
